@@ -60,7 +60,7 @@ class SpectralConv3d(nn.Module):
 
         return torch.einsum("bixyt,ioxyt->boxyt", corner, weights)
 
-    def forward_pass(self, input: torch.Tensor):
+    def forward(self, input: torch.Tensor):
         """
         Compute the spectral convolution from given input.
 
@@ -84,7 +84,7 @@ class SpectralConv3d(nn.Module):
         batch_size = input.shape[0]
         output_fft = torch.zeros(
             (batch_size, self.out_channels, input.size(-3), input.size(-2), input.size(-1) // 2 + 1),
-            dtype=torch.cfloat)
+            dtype=torch.cfloat, device=input_fft.device)
 
         # The FFT indexes [-k_max, k_max] to [0, 2k_max - 1]. We want the low frequency modes which are around -k_max
         # and k_max, i.e. in the "corners" [0:modes] and [-modes:]. We only do it for x,y-dimensions because of the
@@ -99,7 +99,7 @@ class SpectralConv3d(nn.Module):
             input_fft[:, :, -self.modes_x:, -self.modes_y:, :self.modes_t], self.weights_corner4)
 
         # Return to the physical space, use IRFFT to accept input from RFFT
-        return torch.fft.irfft(output_fft, s=(input.size(-3), input.size(-2), input.size(-1)))
+        return torch.fft.irfftn(output_fft, s=(input.size(-3), input.size(-2), input.size(-1)))
 
 
 class FNO3d(nn.Module):
@@ -154,7 +154,7 @@ class FNO3d(nn.Module):
         # Activation function
         self.activation = nn.GELU()
 
-    def forward_pass(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor):
         """
         Forward pass of the model. The steps are:
         1. Lift the input into the higher-dimensional space used in Fourier layers with self.P
