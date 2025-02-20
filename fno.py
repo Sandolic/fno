@@ -85,7 +85,6 @@ class SpectralConv3d(nn.Module):
         output_fft = torch.zeros(
             (batch_size, self.out_channels, input.size(-3), input.size(-2), input.size(-1) // 2 + 1),
             dtype=torch.cfloat, device=input_fft.device)
-
         # The FFT indexes [-k_max, k_max] to [0, 2k_max - 1]. We want the low frequency modes which are around -k_max
         # and k_max, i.e. in the "corners" [0:modes] and [-modes:]. We only do it for x,y-dimensions because of the
         # conjugate symmetry of the t-dimension.
@@ -161,12 +160,13 @@ class FNO3d(nn.Module):
         2. Pass through the 4 Fourier layers, with u' = activation((W + K)(u))
         3. Project back into the desired output space with self.Q
 
-        :param x: input (batch_size, x, y, t, mid_channels)-shaped tensor
+        :param x: input (batch_size, x, y, t, in_channels)-shaped tensor
         :return: output u(x, y)
         """
 
         # Lift input and permute to have (batch_size, mid_channels, x, y, t)-shaped tensor
-        x = self.P(x).permute(0, 4, 1, 2, 3)
+        x = self.P(x)
+        x = x.permute(0, 4, 1, 2, 3)
 
         # Apply Fourier layers
         for i in range(4):
