@@ -5,6 +5,8 @@ import torch.nn as nn
 
 import fno_2d
 
+import numpy as np
+import matplotlib.pyplot as plt
 import time
 
 # Set device
@@ -45,17 +47,19 @@ modes_y = 12
 model = fno_2d.FNO2d(in_channels, out_channels, mid_channels, modes_x, modes_y).to(device)
 
 # Learning parameters
-epochs = 100
+num_epochs = 100
 learning_rate = 0.001
 regularization = 0.0001
-mini_batch = train_size // epochs
+mini_batch = train_size // num_epochs
 
 # Optimizer and loss function
 optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=regularization)
 loss_function = nn.MSELoss()
+training_losses = np.zeros(num_epochs)
 
 # Training loop
-for epoch in range(epochs):
+model.train()
+for epoch in range(num_epochs):
     optimizer.zero_grad()
     curr = time.time()
 
@@ -74,7 +78,18 @@ for epoch in range(epochs):
     optimizer.step()
 
     # Update info
-    print(f"Epoch [{epoch + 1} / {epochs}], Loss: {loss.item() * 100:.6f}%, Computing time: {time.time() - curr:.6f}s")
+    print(f"Epoch [{epoch + 1} / {num_epochs}], Loss: {loss.item() * 100:.6f}%, Computing time: {time.time() - curr:.6f}s")
+    training_losses[epoch] = loss * 100
+
+# Print loss over epochs
+plt.figure(figsize=(8, 5))
+plt.plot(np.arange(1, num_epochs + 1), training_losses, label="Training Loss", marker='o', linestyle='-')
+plt.xlabel("Epochs")
+plt.ylabel("Loss (%)")
+plt.title("Training Loss (%) Over Epochs")
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # Testing model
 model.eval()
